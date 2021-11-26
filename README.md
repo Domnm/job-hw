@@ -2,7 +2,9 @@
 This program is written in [Crystal](https://crystal-lang.org/).
 Instalation instructions here: https://crystal-lang.org/install/
 
-To run:
+To run this program `cmake` must be installed
+
+To run :
 ```
 git clone https://github.com/Domant3lis/job-hw.git
 cd job-hw

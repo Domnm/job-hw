@@ -3,7 +3,7 @@ require "csv"
 require "lexbor"
 
 # TODO: Tests
-# TODO: Each page could be loaded and proccessed concurently
+# TODO: Each page could be loaded and proccessed concurrently
 
 dept_iata = "NBO"
 dest_iata = "MBA"

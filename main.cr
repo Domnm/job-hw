@@ -57,7 +57,6 @@ offsets.each do |offset|
       end
     end
 
-  # This is done to prevent exesive requests and in return being blocked by "fly540"/
 end
 
 # Creates a CSV file

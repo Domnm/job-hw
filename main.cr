@@ -14,8 +14,10 @@ data = Array(DataType).new
 
 offsets = 10..20
 
+# This channel is used to track each days page
 channel_days = Channel(Nil).new(offsets.size)
 
+# Iterates over all the days
 offsets.each do |offset|
   spawn do
     out_time = Time.utc() + offset.days
@@ -49,6 +51,7 @@ offsets.each do |offset|
     res_count = outbound_ids.size * inbound_ids.size
     channel_data = Channel(DataType).new(res_count)
 
+    # gets each flight page and extracts all the needed data from it
     outbound_ids.each do |outbound_id|
       inbound_ids.each do |inbound_id|
         spawn do
@@ -59,12 +62,12 @@ offsets.each do |offset|
 
           p url = "https://www.fly540.com" + response.headers["Location"]
 
-          # data << get_info(url, out_time.year, in_time.year)
           channel_data.send get_info(url, out_time.year, in_time.year)
         end
       end
     end
 
+    # Collects data from all the fibers
     res_count.times do
       data << channel_data.receive
     end
@@ -73,6 +76,7 @@ offsets.each do |offset|
   end
 end
 
+# This ensures that all fibers finish their taks before moving onto building a csv file
 offsets.size.times do
   channel_days.receive
 end
@@ -98,8 +102,6 @@ result = CSV.build(seperator = ';') do |csv|
       info["taxes"]
   end
 end
-
-
 
 File.write("data.csv", result)
 

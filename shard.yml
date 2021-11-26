@@ -1,0 +1,13 @@
+name: fly540
+version: 0.1.0
+
+authors:
+  - Domantas <domant3lis@protonmail.com>
+
+crystal: 1.2.1
+
+license: AGPLv3
+
+dependencies:
+  lexbor:
+    github: kostya/lexbor

@@ -3,7 +3,6 @@ require "csv"
 require "lexbor"
 
 # TODO: Tests
-# TODO: Each page could be loaded and proccessed concurrently
 
 dept_iata = "NBO"
 dest_iata = "MBA"
@@ -15,7 +14,10 @@ data = Array(DataType).new
 
 offsets = 10..20
 
+channel_days = Channel(Nil).new(offsets.size)
+
 offsets.each do |offset|
+  spawn do
     out_time = Time.utc() + offset.days
     in_time = out_time + 7.days
 
@@ -44,19 +46,35 @@ offsets.each do |offset|
     outbound_ids = get_ids(flight_depart_page)
     inbound_ids = get_ids(flight_return_page)
 
+    res_count = outbound_ids.size * inbound_ids.size
+    channel_data = Channel(DataType).new(res_count)
+
     outbound_ids.each do |outbound_id|
       inbound_ids.each do |inbound_id|
-        p url = "https://www.fly540.com/flights/index.php?&task=airbook.addPassengers&outbound_request_id=#{outbound_request_id}&inbound_request_id=#{inbound_request_id}&outbound_solution_id=#{outbound_id["solution_id"].gsub("=") {"%3D"}}&outbound_cabin_class=#{outbound_id["class_id"]}&inbound_solution_id=#{inbound_id["solution_id"].
-      gsub("=") {"%3D"}}&inbound_cabin_class=#{inbound_id["class_id"]}&adults=1&children=0&infants=0&change_flight="
+        spawn do
+          p url = "https://www.fly540.com/flights/index.php?&task=airbook.addPassengers&outbound_request_id=#{outbound_request_id}&inbound_request_id=#{inbound_request_id}&outbound_solution_id=#{outbound_id["solution_id"].gsub("=") {"%3D"}}&outbound_cabin_class=#{outbound_id["class_id"]}&inbound_solution_id=#{inbound_id["solution_id"].
+        gsub("=") {"%3D"}}&inbound_cabin_class=#{inbound_id["class_id"]}&adults=1&children=0&infants=0&change_flight="
 
-        response = HTTP::Client.get(url)
+          response = HTTP::Client.get(url)
 
-        p url = "https://www.fly540.com" + response.headers["Location"]
+          p url = "https://www.fly540.com" + response.headers["Location"]
 
-        data << get_info(url, out_time.year, in_time.year)
+          # data << get_info(url, out_time.year, in_time.year)
+          channel_data.send get_info(url, out_time.year, in_time.year)
+        end
       end
     end
 
+    res_count.times do
+      data << channel_data.receive
+    end
+
+    channel_days.send(nil)
+  end
+end
+
+offsets.size.times do
+  channel_days.receive
 end
 
 # Creates a CSV file
@@ -80,6 +98,8 @@ result = CSV.build(seperator = ';') do |csv|
       info["taxes"]
   end
 end
+
+
 
 File.write("data.csv", result)
 
